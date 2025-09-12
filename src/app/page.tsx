@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Check, X } from "lucide-react";
 import { GradientButton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/authentication";
 import { useStartGame } from "@/app/misc/api/postStartGame";
 import { useCashout } from "@/app/misc/api/postCashoutWinnings";
 import { useQueryClient } from "@tanstack/react-query";
+// import confetti from "canvas-confetti";
 
 type TileState = "hidden" | "win" | "cut";
 type GameState = "setup" | "playing" | "ended";
@@ -59,30 +59,35 @@ export default function CashOrCutGame() {
   } = useAuth();
   const balance = user?.play_balance ?? 0;
   const { mutate: startGame, isPending: isStartingGame } = useStartGame();
-  const cashoutMutation = useCashout();
+  const {mutate: cashout, isPending: isCashingOut} = useCashout();
+
   const [gameReference, setGameReference] = useState<string | null>(null);
-  // Initialize game board with random cut positions
-  const initializeGame = () => {
-    const bombs = getBombCount(stake);
-    const newBoard = new Array(TOTAL_TILES).fill(false);
-    const cutPositions = new Set<number>();
-    while (cutPositions.size < bombs) {
-      cutPositions.add(Math.floor(Math.random() * TOTAL_TILES));
+  // Only generate game board on client to avoid hydration mismatch
+  const [shouldInitBoard, setShouldInitBoard] = useState(false);
+  useEffect(() => {
+    if (shouldInitBoard) {
+      const bombs = getBombCount(stake);
+      const newBoard = new Array(TOTAL_TILES).fill(false);
+      const cutPositions = new Set<number>();
+      while (cutPositions.size < bombs) {
+        cutPositions.add(Math.floor(Math.random() * TOTAL_TILES));
+      }
+      cutPositions.forEach((pos) => {
+        newBoard[pos] = true;
+      });
+      setGameBoard(newBoard);
+      // Initialize tiles
+      const newTiles = Array.from({ length: TOTAL_TILES }, (_, i) => ({
+        id: i + 1,
+        state: "hidden" as TileState,
+        isFlipping: false,
+      }));
+      setTiles(newTiles);
+      setRevealedTiles(0);
+      setCurrentWinnings(0);
+      setShouldInitBoard(false);
     }
-    cutPositions.forEach((pos) => {
-      newBoard[pos] = true;
-    });
-    setGameBoard(newBoard);
-    // Initialize tiles
-    const newTiles = Array.from({ length: TOTAL_TILES }, (_, i) => ({
-      id: i + 1,
-      state: "hidden" as TileState,
-      isFlipping: false,
-    }));
-    setTiles(newTiles);
-    setRevealedTiles(0);
-    setCurrentWinnings(0);
-  };
+  }, [shouldInitBoard, stake]);
 
   const handleStartGame = () => {
     if (stake > balance) return;
@@ -95,7 +100,7 @@ export default function CashOrCutGame() {
           queryClient.invalidateQueries({
             queryKey: ["get-user"],
           });
-          initializeGame();
+          setShouldInitBoard(true);
         },
         onError: () => {
           // handle error (show toast, etc)
@@ -158,7 +163,7 @@ export default function CashOrCutGame() {
   const queryClient = useQueryClient();
   const cashOut = () => {
     if (!gameReference) return;
-    cashoutMutation.mutate(
+    cashout(
       {
         reference: gameReference,
         game_type: "BOMBER",
@@ -175,6 +180,13 @@ export default function CashOrCutGame() {
             const audio = new Audio("/audio/cashout.wav");
             audio.play();
           }
+          // Confetti effect
+          // confetti({
+          //   particleCount: 40,
+          //   spread: 60,
+          //   origin: { y: 0.7 },
+          //   scalar: 0.6,
+          // });
           // Reveal all remaining tiles
           setTiles((prev) =>
             prev.map((t, i) => ({
@@ -193,21 +205,13 @@ export default function CashOrCutGame() {
   };
 
   const newGame = () => {
-    setGameState("setup");
-    setTiles(defaultTiles);
-    setCurrentWinnings(0);
-    setRevealedTiles(0);
+  setGameState("setup");
+  setTiles(defaultTiles);
+  setCurrentWinnings(0);
+  setRevealedTiles(0);
+  setShouldInitBoard(false);
   };
 
-  const getTileContent = (tile: Tile) => {
-    if (tile.state === "hidden") {
-      return tile.id.toString();
-    } else if (tile.state === "win") {
-      return <Check className="w-8 h-8 text-white" />;
-    } else {
-      return <X className="w-8 h-8 text-white" />;
-    }
-  };
 
   return (
     <div className="relative overflow-hidden">
@@ -344,7 +348,7 @@ export default function CashOrCutGame() {
               <GradientButton
                 variant="orange"
                 onClick={cashOut}
-                loading={cashoutMutation.isPending}
+                loading={isCashingOut}
                 disabled={currentWinnings === 0 || revealedTiles < 2}
                 className={`w-full py-6 font-bold rounded-lg transition-all`}
               >

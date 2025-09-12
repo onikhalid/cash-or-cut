@@ -4,14 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 export interface TUser {
   phone_number: string;
   email: string;
-  first_name: null;
-  last_name: null;
-  middle_name: null;
-  account_num: null;
-  account_name: null;
-  bank_name: null;
-  bank_code: null;
-  bvn_number: null;
+  first_name: string | null;
+  last_name: string | null;
+  middle_name: string | null;
+  account_num: string | null;
+  account_name: string | null;
+  bank_name: string | null;
+  bank_code: string | null;
+  bvn_number: string | null;
   gender: string;
   channel: string;
   referalcode: string;
@@ -22,6 +22,7 @@ export interface TUser {
   referrals_quantity: number;
   user_profile_image: string | null;
   account_details: Accountdetails;
+  has_pin: boolean;
 }
 
 interface Accountdetails {

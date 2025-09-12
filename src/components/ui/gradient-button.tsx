@@ -1,6 +1,6 @@
 'use client'
 
-import React, { ButtonHTMLAttributes, ReactNode } from 'react';
+import React, { ButtonHTMLAttributes, ReactNode, useId } from 'react';
 import { useRef, useLayoutEffect, useState } from 'react';
 
 // Button variant types
@@ -100,7 +100,7 @@ const GradientButton: React.FC<GradientButtonProps> = ({
 }) => {
   const config = sizeConfig[size];
   const gradientConfig = gradientVariants[variant];
-  const gradientId = `paint0_linear_${variant}_${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = useId();
 
   // Button width logic: auto by default, 100% if fullWidth, else user can override via style/props
   const buttonRef = useRef<HTMLButtonElement>(null);

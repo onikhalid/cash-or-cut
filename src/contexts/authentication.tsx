@@ -94,9 +94,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return res.data;
     } catch (error) {
       setIsError(true);
+      console.log(
+        "Error response in getUserDetails:",
+        (error as any)?.response.data
+      )
       if (
         (error as any)?.response.data.detail ==
         "Authentication credentials were not provided."
+        ||
+        (error as any)?.response.data.detail ==
+        "Invalid token."
         ||
         (error as any)?.response.data.detail ==
         "Invalid token."
@@ -114,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const initialize = async () => {
       const token = tokenStorage.getAccessToken();
       if (token) {
+
         console.log("Found token during initialization:", token);
         setAxiosDefaultToken(token);
         const res = await getUserDetails(token);
