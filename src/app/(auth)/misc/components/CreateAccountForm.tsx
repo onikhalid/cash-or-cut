@@ -29,11 +29,9 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
-const CreateAccountForm: React.FC = ({
-  closeAuthModal,
-}: {
+const CreateAccountForm: React.FC<{
   closeAuthModal?: () => void;
-}) => {
+}> = ({ closeAuthModal }) => {
   const router = useRouter();
   const {
     register,

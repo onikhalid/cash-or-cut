@@ -21,7 +21,9 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const LoginForm: React.FC = ({closeAuthModal}: {closeAuthModal?:()=>void}) => {
+const LoginForm: React.FC<{ closeAuthModal?: () => void }> = ({
+  closeAuthModal,
+}) => {
   const {
     state: showErrorDialog,
     setTrue: openErrorDialog,
@@ -51,8 +53,7 @@ const LoginForm: React.FC = ({closeAuthModal}: {closeAuthModal?:()=>void}) => {
         dispatch({ type: "SET_TOKEN", payload: res.token });
         await refetchUser();
         router.refresh();
-        closeAuthModal?.()
-        
+        closeAuthModal?.();
       },
       onError: () => {
         dispatch({ type: "SET_ERROR", payload: "Login failed" });
@@ -95,8 +96,6 @@ const LoginForm: React.FC = ({closeAuthModal}: {closeAuthModal?:()=>void}) => {
         >
           Login
         </GradientButton>
-
-      
       </form>
       <ErrorDialog
         isOpen={showErrorDialog}
