@@ -130,41 +130,6 @@ const AppHeader = () => {
               </p>
               <p className="text-lg text-gray-300">{user?.bank_name}</p>
             </section>
-            <p className="text-center my-8 text-sm text-gray-400</p>">
-              ---------- OR ----------
-            </p>
-
-            <p className="text-[0.9rem] text-gray-500">
-              Convert funds from your winnings balance to your balance
-            </p>
-            <section className="mt-2 p-4 bg-[#3b3b3b85] rounded text-center space-y-2">
-              <p className="text-lg font-medium text-gray-300">
-                Winning:{" "}
-                <span className="font-semibold">
-                  {formatCurrency(user?.winning_balance ?? 0)}
-                </span>
-              </p>
-              <AmountInput
-                type="number"
-                min={0}
-                max={user?.winning_balance ?? 0}
-                value={amountToConvert}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setAmountToConvert(val);
-                }}
-                className="w-full px-3 py-2 rounded bg-[#222] text-white border border-gray-700 focus:outline-none focus:border-purple-500"
-                placeholder="Amount to convert"
-              />
-              <GradientButton
-                type="button"
-                title="Convert winnings"
-                disabled={!amountToConvert || amountToConvert <= 0}
-                onClick={handleConvert}
-              >
-                Convert
-              </GradientButton>
-            </section>
           </div>
         </DialogContent>
       </Dialog>

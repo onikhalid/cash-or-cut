@@ -35,9 +35,9 @@ export default function RootLayout({
             backgroundRepeat: "no-repeat",
           }}
         >
-          <div className="relative h-screen overflow-hidden">
+          <div className="relative h-dvh overflow-hidden">
             <AppHeader />
-            <main className="!h-[calc(100vh-80px)] md:!h-[calc(100vh-100px)] overflow-y-auto">
+            <main className="!h-[calc(100dvh-80px)] md:!h-[calc(100dvh-100px)] overflow-y-auto">
               {children}
             </main>
           </div>

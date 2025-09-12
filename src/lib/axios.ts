@@ -19,7 +19,7 @@ export const deleteAxiosDefaultToken = () => {
 export const handleInactiveAccountRedirect = () => {
   if (typeof window !== "undefined") {
     if (window.location.pathname.startsWith("/auth/")) return;
-    window.location.href = "/auth/login";
+    // window.location.href = "/auth/login";
   }
 };
 

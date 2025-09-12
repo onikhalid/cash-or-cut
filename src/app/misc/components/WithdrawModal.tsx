@@ -150,6 +150,7 @@ const WithdrawModal = ({
               maxLength={4}
               containerClassName="justify-start"
               className="size-16 text-xl bg-[#222] text-white border border-gray-700 rounded focus:outline-none focus:border-purple-500"
+              type="password"
             >
               <InputOTPGroup>
                 {[...Array(4)].map((_, i) => (
@@ -172,6 +173,7 @@ const WithdrawModal = ({
               maxLength={4}
               containerClassName="justify-start"
               className="size-16 text-xl bg-[#222] text-white border border-gray-700 rounded focus:outline-none focus:border-purple-500"
+              type="password"
             >
               <InputOTPGroup>
                 {[...Array(4)].map((_, i) => (
@@ -238,7 +240,7 @@ const WithdrawModal = ({
             <GradientButton onClick={handleWithdraw}>Continue</GradientButton>
           </>
         )}
-        
+
         {showPinPrompt && !showForgotPin && (
           <div className="mt-4 space-y-2">
             <label className="block text-sm mb-1 text-white">Enter PIN</label>
@@ -248,6 +250,7 @@ const WithdrawModal = ({
               maxLength={4}
               containerClassName="justify-start"
               className="size-16 text-xl bg-[#222] text-white border border-gray-700 rounded focus:outline-none focus:border-purple-500"
+              type="password"
             >
               <InputOTPGroup>
                 {[...Array(4)].map((_, i) => (
@@ -310,6 +313,7 @@ const WithdrawModal = ({
                 maxLength={4}
                 containerClassName="justify-start"
                 className="size-16 text-xl bg-[#222] text-white border border-gray-700 rounded focus:outline-none focus:border-purple-500"
+                type="password"
               >
                 <InputOTPGroup>
                   {[...Array(4)].map((_, i) => (
@@ -332,6 +336,7 @@ const WithdrawModal = ({
                 maxLength={4}
                 containerClassName="justify-start"
                 className="size-16 text-xl bg-[#222] text-white border border-gray-700 rounded focus:outline-none focus:border-purple-500"
+                type="password"
               >
                 <InputOTPGroup>
                   {[...Array(4)].map((_, i) => (
@@ -371,7 +376,6 @@ const WithdrawModal = ({
             </GradientButton>
           </div>
         )}
-
       </DialogContent>
     </Dialog>
   );
