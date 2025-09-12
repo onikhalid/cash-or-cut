@@ -18,6 +18,7 @@ export const deleteAxiosDefaultToken = () => {
 
 export const handleInactiveAccountRedirect = () => {
   if (typeof window !== "undefined") {
+    if (window.location.pathname.startsWith("/auth/")) return;
     window.location.href = "/auth/login";
   }
 };
@@ -40,6 +41,7 @@ APIAxios.interceptors.response.use(
       ) {
         console.log("Authentication Error:", errorDetail);
         deleteAxiosDefaultToken();
+
         handleInactiveAccountRedirect();
       }
     }

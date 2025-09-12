@@ -48,8 +48,8 @@ const LoginForm: React.FC = () => {
       onSuccess: async (res) => {
         setAxiosDefaultToken(res.token);
         await tokenStorage.setAccessToken(res.token);
-        await refetchUser();
         dispatch({ type: "SET_TOKEN", payload: res.token });
+        await refetchUser();
         router.replace("/");
       },
       onError: () => {

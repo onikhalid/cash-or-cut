@@ -12,7 +12,7 @@ interface APIResponse {
 }
 
 const createPIN = async (data: DTO) => {
-  const res = await APIAxios.post("/wallet/create_pin", data);
+  const res = await APIAxios.post("/wallet/create_pin/", data);
   return res.data as APIResponse;
 };
 

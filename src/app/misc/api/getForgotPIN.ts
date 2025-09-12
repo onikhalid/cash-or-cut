@@ -7,13 +7,14 @@ interface APIResponse {
 }
 
 const createPIN = async () => {
-  const res = await APIAxios.get("/wallet/create_pin");
+  const res = await APIAxios.get("/wallet/forgot_pin/");
   return res.data as APIResponse;
 };
 
-export const useForgotTransactionPIN = () => {
+export const useForgotTransactionPIN = (enabled: boolean = false) => {
   return useQuery({
     queryFn: createPIN,
     queryKey: ["forgot-transaction-pin"],
+    enabled,
   });
 };

@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import tokenStorage from "@/lib/tokens";
-import { setAxiosDefaultToken, deleteAxiosDefaultToken } from "@/lib/axios";
+import APIAxios, { setAxiosDefaultToken, deleteAxiosDefaultToken } from "@/lib/axios";
 import { useGetUser } from "@/app/auth/misc/api/getUserDetails";
 import type { TUser } from "@/app/auth/misc/api/getUserDetails";
 import axios from "axios";
@@ -83,8 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setIsLoading(true);
       console.log("token gotten in getUserDetails:", token);
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/web/user/`,
+      const res = await APIAxios.get(
+        `/api/web/user/`,
         {
           headers: {
             Authorization: `Token ${token}`,
@@ -104,15 +104,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         ||
         (error as any)?.response.data.detail ==
         "Invalid token."
-        ||
-        (error as any)?.response.data.detail ==
-        "Invalid token."
       ) {
         dispatch({ type: "LOGOUT" });
         tokenStorage.removeAccessToken();
         deleteAxiosDefaultToken();
-        router.replace("/auth/login");
-      }
+     }
     } finally {
       setIsLoading(false);
     }
@@ -121,17 +117,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const initialize = async () => {
       const token = tokenStorage.getAccessToken();
       if (token) {
-
-        console.log("Found token during initialization:", token);
         setAxiosDefaultToken(token);
         const res = await getUserDetails(token);
         dispatch({ type: "SET_USER", payload: res });
         dispatch({ type: "SET_TOKEN", payload: token });
       } else {
-        dispatch({ type: "LOGOUT" });
-        if (!pathname.startsWith("/auth")) {
-          router.replace("/auth/login");
-        }
+        dispatch({ type: "LOGOUT" }); 
         return;
       }
     };

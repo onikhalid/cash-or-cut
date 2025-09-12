@@ -52,7 +52,7 @@ const AppHeader = () => {
         <Logo width={isMobile ? 80 : 150} />
       </div>
       <div className="flex items-center gap-2 md:gap-4">
-        <article className="flex items-center gap-2 bg-[#FFFFFF1A] rounded-xs pl-3 pr-0 ">
+        <article className="flex items-center gap-2 bg-[#FFFFFF1A] rounded-xs pl-3 pr-0 " onClick={openWithdrawModal}>
           <span className="text-white font-bold">
             {formatCurrency(user?.winning_balance ?? 0)}
           </span>
