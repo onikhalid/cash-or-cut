@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/authentication";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { addCommasToNumber, formatCurrency } from "@/lib/numbers";
 import { cn } from "@/lib/utils";
-import { useGetUser } from "@/app/auth/misc/api/getUserDetails";
+import { useGetUser } from "@/app/(auth)/misc/api/getUserDetails";
 import { Dialog, DialogContent, DialogHeader } from "./dialog";
 import { useBooleanStateControl } from "@/hooks";
 import GradientButton from "./gradient-button";

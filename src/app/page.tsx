@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/authentication";
 import { useStartGame } from "@/app/misc/api/postStartGame";
 import { useCashout } from "@/app/misc/api/postCashoutWinnings";
 import { useQueryClient } from "@tanstack/react-query";
+import AuthModal from "@/components/ui/auth-modal";
+import { useBooleanStateControl } from "@/hooks";
 // import confetti from "canvas-confetti";
 
 type TileState = "hidden" | "win" | "cut";
@@ -52,16 +54,31 @@ export default function CashOrCutGame() {
   const [revealedTiles, setRevealedTiles] = useState<number>(0);
   const [gameBoard, setGameBoard] = useState<boolean[]>([]);
   const [bombFound, setBombFound] = useState<boolean>(false);
+
   const {
     soundEnabled,
     setSoundEnabled,
-    state: { user },
+    state: { user, isAuthenticated, loading },
   } = useAuth();
+  const {
+    state: isAuthModalOpen,
+    setTrue: openAuthModal,
+    setFalse: closeAuthModal,
+  } = useBooleanStateControl();
+  useEffect(() => {
+    if (!loading && !user && !isAuthenticated) {
+      openAuthModal();
+    } else if (!loading && !!user && isAuthenticated) {
+      closeAuthModal();
+    }
+  }, [loading, user, isAuthenticated, openAuthModal, closeAuthModal]);
+
   const balance = user?.play_balance ?? 0;
   const { mutate: startGame, isPending: isStartingGame } = useStartGame();
-  const {mutate: cashout, isPending: isCashingOut} = useCashout();
+  const { mutate: cashout, isPending: isCashingOut } = useCashout();
 
   const [gameReference, setGameReference] = useState<string | null>(null);
+
   // Only generate game board on client to avoid hydration mismatch
   const [shouldInitBoard, setShouldInitBoard] = useState(false);
   useEffect(() => {
@@ -138,6 +155,7 @@ export default function CashOrCutGame() {
           const audio = new Audio("/audio/game-over.wav");
           audio.play();
         }
+        // Reveal all tiles after a short delay
         setTimeout(() => {
           setTiles((prev) =>
             prev.map((t, i) => ({
@@ -146,14 +164,13 @@ export default function CashOrCutGame() {
               isFlipping: false,
             }))
           );
-          setGameState("ended");
+          if (soundEnabled) {
+            const audio = new Audio("/audio/flip-card.wav");
+            audio.play();
+          }
         }, 500);
+        setGameState("ended");
       } else {
-        // Win - update winnings
-        if (soundEnabled) {
-          const audio = new Audio("/audio/flip-card.wav");
-          audio.play();
-        }
         const newRevealedCount = revealedTiles + 1;
         setRevealedTiles(newRevealedCount);
         setCurrentWinnings(calculateWinnings(newRevealedCount));
@@ -205,13 +222,12 @@ export default function CashOrCutGame() {
   };
 
   const newGame = () => {
-  setGameState("setup");
-  setTiles(defaultTiles);
-  setCurrentWinnings(0);
-  setRevealedTiles(0);
-  setShouldInitBoard(false);
+    setGameState("setup");
+    setTiles(defaultTiles);
+    setCurrentWinnings(0);
+    setRevealedTiles(0);
+    setShouldInitBoard(false);
   };
-
 
   return (
     <div className="relative overflow-hidden">
@@ -220,9 +236,7 @@ export default function CashOrCutGame() {
           <div
             className={cn(
               "text-center rounded-md py-2 px-4 border max-w-md mx-auto mb-4",
-              bombFound
-                ? "bg-[#370005]"
-                : "bg-[#03ab5160]"
+              bombFound ? "bg-[#370005]" : "bg-[#03ab5160]"
             )}
           >
             {!bombFound ? (
@@ -393,6 +407,8 @@ export default function CashOrCutGame() {
           )}
         </div>
       </footer>
+
+      <AuthModal open={isAuthModalOpen} closeAuthModal={closeAuthModal}/>
     </div>
   );
 }

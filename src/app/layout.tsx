@@ -17,7 +17,6 @@ export const metadata: Metadata = {
   description: "Play cash or cut and win fast cash",
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,16 +24,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <AllProviders>
-        <body
-          className={`${DMSans.className} antialiased`}
-          style={{
-            background: `url('/app-bg.png')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        >
+      <body
+        className={`${DMSans.className} antialiased`}
+        style={{
+          background: `url('/app-bg.png')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        <AllProviders>
           <div className="relative h-dvh overflow-hidden">
             <AppHeader />
             <main className="!h-[calc(100dvh-80px)] md:!h-[calc(100dvh-100px)] overflow-y-auto">
@@ -42,8 +41,8 @@ export default function RootLayout({
             </main>
           </div>
           <Toaster />
-        </body>
-      </AllProviders>
+        </AllProviders>
+      </body>
     </html>
   );
 }

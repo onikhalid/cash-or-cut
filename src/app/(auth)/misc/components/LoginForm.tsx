@@ -2,7 +2,7 @@
 import React from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { usePhoneLogin } from "@/app/auth/misc/api/postLogin";
+import { usePhoneLogin } from "@/app/(auth)/misc/api/postLogin";
 import tokenStorage from "@/lib/tokens";
 import { setAxiosDefaultToken } from "@/lib/axios";
 import { useAuth } from "@/contexts/authentication";
@@ -21,7 +21,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const LoginForm: React.FC = () => {
+const LoginForm: React.FC = ({closeAuthModal}: {closeAuthModal?:()=>void}) => {
   const {
     state: showErrorDialog,
     setTrue: openErrorDialog,
@@ -50,7 +50,9 @@ const LoginForm: React.FC = () => {
         await tokenStorage.setAccessToken(res.token);
         dispatch({ type: "SET_TOKEN", payload: res.token });
         await refetchUser();
-        router.replace("/");
+        router.refresh();
+        closeAuthModal?.()
+        
       },
       onError: () => {
         dispatch({ type: "SET_ERROR", payload: "Login failed" });
@@ -63,7 +65,7 @@ const LoginForm: React.FC = () => {
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-6 w-[88vw] max-w-md mx-auto"
+        className="space-y-6 w-full mx-auto"
       >
         <div>
           <Input
@@ -94,17 +96,7 @@ const LoginForm: React.FC = () => {
           Login
         </GradientButton>
 
-        <footer>
-          <p className="text-center text-sm text-white/70">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/auth/signup"
-              className="text-purple-400 hover:underline"
-            >
-              Sign Up
-            </Link>
-          </p>
-        </footer>
+      
       </form>
       <ErrorDialog
         isOpen={showErrorDialog}

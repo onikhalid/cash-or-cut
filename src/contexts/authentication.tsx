@@ -10,16 +10,18 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import tokenStorage from "@/lib/tokens";
-import APIAxios, { setAxiosDefaultToken, deleteAxiosDefaultToken } from "@/lib/axios";
-import { useGetUser } from "@/app/auth/misc/api/getUserDetails";
-import type { TUser } from "@/app/auth/misc/api/getUserDetails";
-import axios from "axios";
+import APIAxios, {
+  setAxiosDefaultToken,
+  deleteAxiosDefaultToken,
+} from "@/lib/axios";
+import type { TUser } from "@/app/(auth)/misc/api/getUserDetails";
 
 interface AuthState {
   user: TUser | null;
   token: string | null;
   loading: boolean;
   error: string | null;
+  isAuthenticated: boolean;
 }
 
 type AuthAction =
@@ -34,18 +36,19 @@ const initialState: AuthState = {
   token: null,
   loading: true,
   error: null,
+  isAuthenticated: false,
 };
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case "SET_USER":
-      return { ...state, user: action.payload, loading: false };
+      return { ...state, user: action.payload, loading: false, isAuthenticated: !!action.payload };
     case "SET_TOKEN":
       return { ...state, token: action.payload };
     case "LOGOUT":
       deleteAxiosDefaultToken();
       tokenStorage.removeAccessToken();
-      return { ...initialState, loading: false };
+      return { ...initialState, loading: false, isAuthenticated: false };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
     case "SET_ERROR":
@@ -72,47 +75,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [state, dispatch] = useReducer(authReducer, initialState);
   const [soundEnabled, setSoundEnabled] = React.useState(true);
   const router = useRouter();
-  const [user, setUser] = useState<TUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
+
 
   const pathname =
     typeof window !== "undefined" ? window.location.pathname : "";
 
-  const getUserDetails = async (token: string) => {
-    try {
-      setIsLoading(true);
-      console.log("token gotten in getUserDetails:", token);
-      const res = await APIAxios.get(
-        `/api/web/user/`,
-        {
+  const getUserDetails = React.useCallback(
+    async (token: string) => {
+      try {
+        setIsLoading(true);
+        console.log("token gotten in getUserDetails:", token);
+        const res = await APIAxios.get(`/api/web/user/`, {
           headers: {
             Authorization: `Token ${token}`,
           },
+        });
+        return res.data;
+      } catch (error) {
+        setIsError(true);
+        console.log(
+          "Error response in getUserDetails:",
+          (error as any)?.response?.data
+        );
+        if (
+          (error as any)?.response?.data?.detail ===
+            "Authentication credentials were not provided." ||
+          (error as any)?.response?.data?.detail === "Invalid token."
+        ) {
+          dispatch({ type: "LOGOUT" });
+          tokenStorage.removeAccessToken();
+          deleteAxiosDefaultToken();
         }
-      );
-      return res.data;
-    } catch (error) {
-      setIsError(true);
-      console.log(
-        "Error response in getUserDetails:",
-        (error as any)?.response.data
-      )
-      if (
-        (error as any)?.response.data.detail ==
-        "Authentication credentials were not provided."
-        ||
-        (error as any)?.response.data.detail ==
-        "Invalid token."
-      ) {
-        dispatch({ type: "LOGOUT" });
-        tokenStorage.removeAccessToken();
-        deleteAxiosDefaultToken();
-     }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [dispatch, router]
+  );
   useEffect(() => {
     const initialize = async () => {
       const token = tokenStorage.getAccessToken();
@@ -122,12 +123,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         dispatch({ type: "SET_USER", payload: res });
         dispatch({ type: "SET_TOKEN", payload: token });
       } else {
-        dispatch({ type: "LOGOUT" }); 
+        dispatch({ type: "LOGOUT" });
+        if (pathname.startsWith("/auth/")) {
+          return;
+        }
+      
         return;
       }
     };
     initialize();
-  }, [router, pathname]);
+  }, [router, pathname, getUserDetails]);
 
   const refetchUser = async () => {
     if (state.token) {

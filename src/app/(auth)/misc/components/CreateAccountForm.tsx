@@ -4,7 +4,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCreateAccount } from "@/app/auth/misc/api/postCreateAccount";
+import { useCreateAccount } from "@/app/(auth)/misc/api/postCreateAccount";
 import GradientButton from "@/components/ui/gradient-button";
 import { Input } from "@/components/ui/input";
 import ErrorDialog from "@/components/ui/error-dialog";
@@ -29,7 +29,11 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
-const CreateAccountForm: React.FC = () => {
+const CreateAccountForm: React.FC = ({
+  closeAuthModal,
+}: {
+  closeAuthModal?: () => void;
+}) => {
   const router = useRouter();
   const {
     register,
@@ -52,7 +56,8 @@ const CreateAccountForm: React.FC = () => {
   const onSubmit = (data: FormValues) => {
     createAccount(data, {
       onSuccess: () => {
-        router.replace("/auth/login");
+        router.refresh();
+        closeAuthModal?.();
       },
       onError: () => {
         openErrorDialog();
@@ -61,10 +66,7 @@ const CreateAccountForm: React.FC = () => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6 w-[88vw] max-w-md mx-auto"
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 w-full">
       <div>
         <Input
           id="first_name"
@@ -142,16 +144,11 @@ const CreateAccountForm: React.FC = () => {
         isOpen={showErrorDialog}
         onClose={closeErrorDialog}
         heading="Account Creation Error"
-        subheading={createAccountError?.message || "Account creation failed. Please try again."}
+        subheading={
+          createAccountError?.message ||
+          "Account creation failed. Please try again."
+        }
       />
-      <footer>
-        <p className="text-center text-sm text-white/70">
-          Already have an account?{" "}
-          <Link href="/auth/login" className="text-purple-400 hover:underline">
-            Log In
-          </Link>
-        </p>
-      </footer>
     </form>
   );
 };
