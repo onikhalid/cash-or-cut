@@ -51,9 +51,9 @@ const LoginForm: React.FC<{ closeAuthModal?: () => void }> = ({
         setAxiosDefaultToken(res.token);
         await tokenStorage.setAccessToken(res.token);
         dispatch({ type: "SET_TOKEN", payload: res.token });
+        closeAuthModal?.();
         await refetchUser();
         router.refresh();
-        closeAuthModal?.();
       },
       onError: () => {
         dispatch({ type: "SET_ERROR", payload: "Login failed" });

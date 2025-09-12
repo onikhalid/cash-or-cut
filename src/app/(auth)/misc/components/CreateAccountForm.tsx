@@ -54,8 +54,8 @@ const CreateAccountForm: React.FC<{
   const onSubmit = (data: FormValues) => {
     createAccount(data, {
       onSuccess: () => {
-        router.refresh();
         closeAuthModal?.();
+        router.refresh();
       },
       onError: () => {
         openErrorDialog();
