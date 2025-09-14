@@ -171,6 +171,10 @@ export default function CashOrCutGame() {
         }, 500);
         setGameState("ended");
       } else {
+        if (soundEnabled) {
+          const audio = new Audio("/audio/flip-card.wav");
+          audio.play();
+        }
         const newRevealedCount = revealedTiles + 1;
         setRevealedTiles(newRevealedCount);
         setCurrentWinnings(calculateWinnings(newRevealedCount));
@@ -264,15 +268,14 @@ export default function CashOrCutGame() {
               className={cn(
                 "tile-container cursor-pointer",
                 "transition-all duration-200",
-                gameState === "setup" && "cursor-not-allowed opacity-50"
+                gameState === "setup" && "cursor-not-allowed opacity-50",
+                "aspect-square md:!aspect-4/5 min-w-[2.2rem] md:min-h-[2.5rem]"
               )}
               style={{
                 width: "100%",
-                aspectRatio: "4/5",
+                // aspectRatio: "4/5",
                 maxWidth: "4.25rem",
                 maxHeight: "4rem",
-                minWidth: "2.2rem",
-                minHeight: "2.5rem",
               }}
               onClick={() => flipTile(index)}
             >
@@ -408,7 +411,7 @@ export default function CashOrCutGame() {
         </div>
       </footer>
 
-      <AuthModal open={isAuthModalOpen} closeAuthModal={closeAuthModal}/>
+      <AuthModal open={isAuthModalOpen} closeAuthModal={closeAuthModal} />
     </div>
   );
 }

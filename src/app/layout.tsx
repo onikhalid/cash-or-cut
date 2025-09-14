@@ -34,9 +34,9 @@ export default function RootLayout({
         }}
       >
         <AllProviders>
-          <div className="relative h-dvh overflow-hidden">
+          <div className="relative min-h-[100svh] overflow-hidden">
             <AppHeader />
-            <main className="!h-[calc(100dvh-80px)] md:!h-[calc(100dvh-100px)] overflow-y-auto">
+            <main className="!min-h-[calc(100svh-80px)] md:!min-h-[calc(100svh-100px)] overflow-y-auto">
               {children}
             </main>
           </div>
