@@ -3,18 +3,26 @@
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import GradientButton from "@/components/ui/gradient-button";
+
 import { useAuth } from "@/contexts/authentication";
 import { useWithdraw } from "../api/postWithdrawWinnings";
 import { useCreateTransactionPIN } from "../api/postCreatePIN";
 import { useForgotTransactionPIN } from "../api/getForgotPIN";
+import { useVerifyAccountNumber } from "../api/postVerifyAccountNumber";
+import { useGetBankLists } from "../api/getBankList";
 import { toast } from "sonner";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { AmountInput } from "@/components/ui/input";
+import { AmountInput, Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/numbers";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface WithdrawModalProps {
   isWithdrawModalOpen: boolean;
@@ -28,8 +36,40 @@ const WithdrawModal = ({
   const {
     state: { user, loading },
   } = useAuth();
-  const [step, setStep] = useState(user?.has_pin ? "withdraw" : "create-pin");
+
+  // Step management
+  const [step, setStep] = useState(user?.has_pin ? "bank" : "create-pin");
+
+  // Bank/account verification
+  const [selectedBank, setSelectedBank] = useState<string>("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [bankError, setBankError] = useState("");
+  const { data: allBanks, isLoading: banksLoading } = useGetBankLists();
+  const verifyAccountMutation = useVerifyAccountNumber();
+  const [bankSearch, setBankSearch] = useState("");
+  const [isBankPopoverOpen, setIsBankPopoverOpen] = useState(false);
+  const [filteredBanks, setFilteredBanks] = useState<typeof allBanks>([]);
+
+  // Filter banks based on search
+  useEffect(() => {
+    if (!allBanks) {
+      setFilteredBanks([]);
+      return;
+    }
+    
+    const filtered = allBanks.filter(
+      (bank) =>
+        bank.name.toLowerCase().includes(bankSearch.toLowerCase()) ||
+        bank.cbn_code.toLowerCase().includes(bankSearch.toLowerCase())
+    );
+    setFilteredBanks(filtered);
+  }, [allBanks, bankSearch]);
+
+  // Withdrawal details
   const [amount, setAmount] = useState(0);
+
+  // PIN logic
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [showPinPrompt, setShowPinPrompt] = useState(false);
@@ -45,11 +85,7 @@ const WithdrawModal = ({
 
   useEffect(() => {
     if (!user) return;
-    if (user.has_pin) {
-      setStep("withdraw");
-    } else {
-      setStep("create-pin");
-    }
+    setStep(user.has_pin ? "bank" : "create-pin");
   }, [user]);
 
   // 1. Create PIN
@@ -65,13 +101,44 @@ const WithdrawModal = ({
       {
         onSuccess: () => {
           toast.success("PIN created!");
-          setStep("withdraw");
+          setStep("bank");
         },
       }
     );
   };
 
-  // 2. Withdraw
+  // 2. Verify Account
+  const handleVerifyAccount = () => {
+    setBankError("");
+    if (!selectedBank) {
+      setBankError("Select a bank");
+      return;
+    }
+    if (!accountNumber || accountNumber.length !== 10) {
+      setBankError("Enter a valid 10-digit account number");
+      return;
+    }
+    verifyAccountMutation.mutate(
+      {
+        account_number: Number(accountNumber),
+        bank_code: selectedBank,
+      },
+      {
+        onSuccess: (data) => {
+          if (data?.account_name) {
+            setAccountName(data.account_name);
+            toast.success("Account verified!");
+            setStep("withdraw");
+          } else {
+            setBankError("Could not verify account");
+          }
+        },
+        onError: () => setBankError("Verification failed"),
+      }
+    );
+  };
+
+  // 3. Withdraw
   const handleWithdraw = () => {
     if (amount <= 0 || amount > (user?.winning_balance ?? 0)) {
       toast.error("Invalid amount");
@@ -80,15 +147,16 @@ const WithdrawModal = ({
     setShowPinPrompt(true);
   };
 
-  // 3. Submit withdrawal with PIN
+  // 4. Submit withdrawal with PIN
   const submitWithdraw = () => {
     withdrawMutation.mutate(
       {
         amount,
-        account_name: user?.account_name ?? "",
-        account_number: user?.account_num ?? "",
-        bank_name: user?.bank_name ?? "",
-        bank_code: user?.bank_code ?? "",
+        account_name: accountName,
+        account_number: accountNumber,
+        bank_name:
+          allBanks?.find((b) => b.cbn_code === selectedBank)?.name ?? "",
+        bank_code: selectedBank,
         pin,
       },
       {
@@ -100,13 +168,13 @@ const WithdrawModal = ({
     );
   };
 
-  // 4. Forgot PIN
+  // 5. Forgot PIN
   const handleForgotPin = () => {
     forgotPinQuery.refetch();
     setShowForgotPin(true);
   };
 
-  // 5. Reset PIN with OTP
+  // 6. Reset PIN with OTP
   const handleResetPin = () => {
     if (
       !otp ||
@@ -134,7 +202,7 @@ const WithdrawModal = ({
     );
   };
 
-  // Render logic
+  // --- Render logic ---
   if (step === "create-pin") {
     return (
       <Dialog open={isWithdrawModalOpen} onOpenChange={closeWithdrawModal}>
@@ -203,6 +271,93 @@ const WithdrawModal = ({
               <div className="text-xs text-red-400 mb-2">PINs do not match</div>
             )}
           <GradientButton onClick={handleCreatePin}>Set PIN</GradientButton>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  
+  
+  if (step === "bank") {
+    return (
+      <Dialog open={isWithdrawModalOpen} onOpenChange={closeWithdrawModal}>
+        <DialogContent>
+          <DialogHeader>Enter Bank Details</DialogHeader>
+          <div className="mb-4">
+            <label className="block text-sm mb-1 text-white">Bank</label>
+            <Popover open={isBankPopoverOpen} onOpenChange={setIsBankPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full px-3 py-2 rounded bg-[#222] text-white border border-gray-700 focus:outline-none focus:border-purple-500 flex justify-between items-center"
+                >
+                  {selectedBank
+                    ? `${
+                        allBanks?.find((b) => b.cbn_code === selectedBank)?.name
+                      }`
+                    : "Select bank"}
+                  <span className="ml-2 text-xs">&#9660;</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[350px] p-2 bg-[#222] border border-gray-700">
+                <div>
+                  <Input
+                    placeholder="Search bank by name"
+                    value={bankSearch}
+                    onChange={(e) => setBankSearch(e.target.value)}
+                    disabled={banksLoading}
+                    className="mb-2 bg-[#333] text-white border-gray-600"
+                  />
+                  <div className="max-h-[200px] overflow-y-auto">
+                    {filteredBanks?.length ? (
+                      filteredBanks.map((bank) => (
+                        <div
+                          key={bank.cbn_code}
+                          onClick={() => {
+                            setSelectedBank(bank.cbn_code);
+                            setIsBankPopoverOpen(false);
+                          }}
+                          className={`cursor-pointer p-2 rounded hover:bg-gray-700 flex justify-between items-center ${
+                            selectedBank === bank.cbn_code
+                              ? "bg-purple-900 text-white"
+                              : ""
+                          }`}
+                        >
+                          <span className="font-medium">{bank.name}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-gray-400 px-2 py-1">
+                        No banks found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm mb-1 text-white">
+              Account Number
+            </label>
+            <Input
+              type="number"
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              maxLength={10}
+              className="w-full px-3 py-2 rounded bg-[#222] text-white border border-gray-700 focus:outline-none focus:border-purple-500 mb-2"
+              placeholder="10-digit account number"
+            />
+          </div>
+          <GradientButton
+            onClick={handleVerifyAccount}
+            loading={verifyAccountMutation.isPending}
+          >
+            Verify Account
+          </GradientButton>
+          {bankError && (
+            <div className="text-xs text-red-400 mt-2">{bankError}</div>
+          )}
         </DialogContent>
       </Dialog>
     );
@@ -277,7 +432,7 @@ const WithdrawModal = ({
                 Withdraw
               </GradientButton>
               <button
-                className="text-xs text-purple-400 underline mt-2   "
+                className="text-xs text-purple-400 underline mt-2"
                 onClick={handleForgotPin}
               >
                 Forgot PIN?
@@ -290,7 +445,6 @@ const WithdrawModal = ({
           <div className="mt-4 space-y-2">
             <div className="mb-2">
               <label className="block text-sm mb-1 text-white">OTP</label>
-
               <InputOTP
                 value={otp}
                 onChange={setOtp}

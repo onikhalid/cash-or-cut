@@ -1,14 +1,11 @@
 import APIAxios from "@/lib/axios";
 import { useQuery } from "@tanstack/react-query";
 
-interface APIResponse {
-  message: string;
-  reference: string;
-}
+
 
 const getBanks = async () => {
-  const res = await APIAxios.get("/wallet/forgot_pin/");
-  return res.data as APIResponse;
+  const res = await APIAxios.get("/wallet/fetch-banks/");
+  return res.data as TBank[];
 };
 
 export const useGetBankLists = () => {
@@ -17,3 +14,15 @@ export const useGetBankLists = () => {
     queryKey: ["banks-list"],
   });
 };
+
+
+interface TBank {
+  bank_code: string;
+  cbn_code: string;
+  name: string;
+  bank_short_name: string;
+  disabled_for_vnuban?: string;
+  logo?: string;
+  ussd_code?: string;
+  bank_logo?: string;
+}
