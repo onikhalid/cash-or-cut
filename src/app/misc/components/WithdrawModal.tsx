@@ -45,6 +45,7 @@ const WithdrawModal = ({
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
   const [bankError, setBankError] = useState("");
+  const [isAccountVerified, setIsAccountVerified] = useState(false);
   const { data: allBanks, isLoading: banksLoading } = useGetBankLists();
   const verifyAccountMutation = useVerifyAccountNumber();
   const [bankSearch, setBankSearch] = useState("");
@@ -57,7 +58,7 @@ const WithdrawModal = ({
       setFilteredBanks([]);
       return;
     }
-    
+
     const filtered = allBanks.filter(
       (bank) =>
         bank.name.toLowerCase().includes(bankSearch.toLowerCase()) ||
@@ -110,6 +111,7 @@ const WithdrawModal = ({
   // 2. Verify Account
   const handleVerifyAccount = () => {
     setBankError("");
+    setIsAccountVerified(false);
     if (!selectedBank) {
       setBankError("Select a bank");
       return;
@@ -127,13 +129,18 @@ const WithdrawModal = ({
         onSuccess: (data) => {
           if (data?.account_name) {
             setAccountName(data.account_name);
+            setIsAccountVerified(true);
             toast.success("Account verified!");
-            setStep("withdraw");
+            // Don't automatically proceed to withdraw step
           } else {
             setBankError("Could not verify account");
+            setIsAccountVerified(false);
           }
         },
-        onError: () => setBankError("Verification failed"),
+        onError: () => {
+          setBankError("Verification failed");
+          setIsAccountVerified(false);
+        },
       }
     );
   };
@@ -163,6 +170,10 @@ const WithdrawModal = ({
         onSuccess: () => {
           toast.success("Withdrawal successful!");
           closeWithdrawModal();
+        },
+        onError(error) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          toast.error(`Withdrawal failed: ${(error as any).response.data.message}`);
         },
       }
     );
@@ -276,8 +287,6 @@ const WithdrawModal = ({
     );
   }
 
-  
-  
   if (step === "bank") {
     return (
       <Dialog open={isWithdrawModalOpen} onOpenChange={closeWithdrawModal}>
@@ -285,7 +294,10 @@ const WithdrawModal = ({
           <DialogHeader>Enter Bank Details</DialogHeader>
           <div className="mb-4">
             <label className="block text-sm mb-1 text-white">Bank</label>
-            <Popover open={isBankPopoverOpen} onOpenChange={setIsBankPopoverOpen}>
+            <Popover
+              open={isBankPopoverOpen}
+              onOpenChange={setIsBankPopoverOpen}
+            >
               <PopoverTrigger asChild>
                 <button
                   type="button"
@@ -348,16 +360,46 @@ const WithdrawModal = ({
               className="w-full px-3 py-2 rounded bg-[#222] text-white border border-gray-700 focus:outline-none focus:border-purple-500 mb-2"
               placeholder="10-digit account number"
             />
+            
+            {/* Account verification status */}
+            {isAccountVerified && accountName && (
+              <div className="mt-2 p-3 rounded-md bg-green-100 border border-green-300">
+                <div className="text-sm text-green-800 font-medium">
+                  ✓ Account Verified
+                </div>
+                <div className="text-green-700">
+                  {accountName}
+                </div>
+              </div>
+            )}
+            
+            {bankError && (
+              <div className="mt-2 p-3 rounded-md bg-red-100 border border-red-300">
+                <div className="text-sm text-red-800">
+                  ✗ {bankError}
+                </div>
+              </div>
+            )}
           </div>
-          <GradientButton
-            onClick={handleVerifyAccount}
-            loading={verifyAccountMutation.isPending}
-          >
-            Verify Account
-          </GradientButton>
-          {bankError && (
-            <div className="text-xs text-red-400 mt-2">{bankError}</div>
-          )}
+          
+          <div className="flex gap-3">
+            {!isAccountVerified ? (
+              <GradientButton
+                onClick={handleVerifyAccount}
+                loading={verifyAccountMutation.isPending}
+                className="flex-1"
+              >
+                Verify Account
+              </GradientButton>
+            ) : (
+              <GradientButton
+                onClick={() => setStep("withdraw")}
+                className="flex-1"
+              >
+                Continue to Amount
+              </GradientButton>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     );
@@ -370,6 +412,15 @@ const WithdrawModal = ({
         {!showPinPrompt && (
           <>
             <div>
+              <div className="py-2 px-4 rounded-md bg-[rgb(35,36,38)] mb-8">
+                <p>Account Details</p>
+                <p className="text-lg font-medium">
+                  {accountName} -{" "}
+                  <span>
+                   {accountNumber}
+                  </span>
+                </p>
+              </div>
               <p>Balance</p>
               <p>
                 {loading ? (
@@ -392,7 +443,17 @@ const WithdrawModal = ({
               placeholder="Amount"
               className="w-full px-3 py-2 rounded bg-[#222] text-white border border-gray-700 focus:outline-none focus:border-purple-500 mb-4"
             />
-            <GradientButton onClick={handleWithdraw}>Continue</GradientButton>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep("bank")}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 rounded hover:border-gray-500 transition-colors"
+              >
+                Back
+              </button>
+              <GradientButton onClick={handleWithdraw} className="flex-1">
+                Continue
+              </GradientButton>
+            </div>
           </>
         )}
 
@@ -422,9 +483,15 @@ const WithdrawModal = ({
                 PIN must be 4 digits
               </div>
             )}
-            <footer className="space-x-4 mt-3">
+            <footer className="flex gap-3 mt-3">
+              <button
+                onClick={() => setShowPinPrompt(false)}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-600 rounded hover:border-gray-500 transition-colors"
+              >
+                Back
+              </button>
               <GradientButton
-                className=""
+                className="flex-1"
                 onClick={submitWithdraw}
                 disabled={pin.length !== 4}
                 loading={withdrawMutation.isPending}
@@ -432,7 +499,7 @@ const WithdrawModal = ({
                 Withdraw
               </GradientButton>
               <button
-                className="text-xs text-purple-400 underline mt-2"
+                className="text-xs text-purple-400 underline mt-2 self-center"
                 onClick={handleForgotPin}
               >
                 Forgot PIN?
