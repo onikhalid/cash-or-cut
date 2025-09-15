@@ -9,7 +9,7 @@ import { useStartGame } from "@/app/misc/api/postStartGame";
 import { useCashout } from "@/app/misc/api/postCashoutWinnings";
 import { useQueryClient } from "@tanstack/react-query";
 import AuthModal from "@/components/ui/auth-modal";
-import { useBooleanStateControl } from "@/hooks";
+import { useBooleanStateControl, useAudio } from "@/hooks";
 // import confetti from "canvas-confetti";
 
 type TileState = "hidden" | "win" | "cut";
@@ -60,6 +60,7 @@ export default function CashOrCutGame() {
     setSoundEnabled,
     state: { user, isAuthenticated, loading },
   } = useAuth();
+  const { playAudio, stopAllAudio } = useAudio();
   const {
     state: isAuthModalOpen,
     setTrue: openAuthModal,
@@ -72,6 +73,13 @@ export default function CashOrCutGame() {
       closeAuthModal();
     }
   }, [loading, user, isAuthenticated, openAuthModal, closeAuthModal]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+    };
+  }, [stopAllAudio]);
 
   const balance = user?.play_balance ?? 0;
   const { mutate: startGame, isPending: isStartingGame } = useStartGame();
@@ -151,9 +159,16 @@ export default function CashOrCutGame() {
       );
       if (isCut) {
         setBombFound(true);
+        // Try both new and old audio methods
+        playAudio('game-over');
         if (soundEnabled) {
-          const audio = new Audio("/audio/game-over.wav");
-          audio.play();
+          try {
+            const audio = new Audio("/audio/game-over.wav");
+            audio.volume = 0.7;
+            audio.play().catch(e => console.log('Direct audio failed:', e));
+          } catch (e) {
+            console.log('Audio creation failed:', e);
+          }
         }
         // Reveal all tiles after a short delay
         setTimeout(() => {
@@ -164,16 +179,30 @@ export default function CashOrCutGame() {
               isFlipping: false,
             }))
           );
+          playAudio('flip-card', { delay: 100 });
           if (soundEnabled) {
-            const audio = new Audio("/audio/flip-card.wav");
-            audio.play();
+            setTimeout(() => {
+              try {
+                const audio = new Audio("/audio/flip-card.wav");
+                audio.volume = 0.7;
+                audio.play().catch(e => console.log('Direct audio failed:', e));
+              } catch (e) {
+                console.log('Audio creation failed:', e);
+              }
+            }, 100);
           }
         }, 500);
         setGameState("ended");
       } else {
+        playAudio('flip-card');
         if (soundEnabled) {
-          const audio = new Audio("/audio/flip-card.wav");
-          audio.play();
+          try {
+            const audio = new Audio("/audio/flip-card.wav");
+            audio.volume = 0.7;
+            audio.play().catch(e => console.log('Direct audio failed:', e));
+          } catch (e) {
+            console.log('Audio creation failed:', e);
+          }
         }
         const newRevealedCount = revealedTiles + 1;
         setRevealedTiles(newRevealedCount);
@@ -197,9 +226,15 @@ export default function CashOrCutGame() {
           queryClient.invalidateQueries({
             queryKey: ["get-user"],
           });
+          playAudio('cashout');
           if (soundEnabled) {
-            const audio = new Audio("/audio/cashout.wav");
-            audio.play();
+            try {
+              const audio = new Audio("/audio/cashout.wav");
+              audio.volume = 0.7;
+              audio.play().catch(e => console.log('Direct audio failed:', e));
+            } catch (e) {
+              console.log('Audio creation failed:', e);
+            }
           }
           // Confetti effect
           // confetti({
@@ -226,6 +261,7 @@ export default function CashOrCutGame() {
   };
 
   const newGame = () => {
+    stopAllAudio(); // Stop any playing audio
     setGameState("setup");
     setTiles(defaultTiles);
     setCurrentWinnings(0);

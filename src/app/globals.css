@@ -85,7 +85,7 @@
 }
 
 .tile-front {
-  background-image: url("/images/tile-orange.svg");
+  background-image: url("/images/tile-orange.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -99,7 +99,7 @@
 }
 
 .tile-back.win {
-  background-image: url("/images/tile-green.svg");
+  background-image: url("/images/tile-green.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -115,7 +115,7 @@
 }
 
 .tile-container:hover .tile-front {
-  background-image: url("/images/tile-orange.svg");
+  background-image: url("/images/tile-orange.png");
   transform: scale(1.05);
 }
 
